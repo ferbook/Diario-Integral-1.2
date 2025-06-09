@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Diario Integral 2</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fdfdfd;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    h1 { text-align: center; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .entry { margin: 20px 0; }
+    label { display: block; margin-top: 10px; }
+    button { margin-top: 15px; }
+    .chart-container { margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Diario Integral 2</h1>
+    <div class="entry">
+      <label>¿Cómo te sientes hoy?</label>
+      <select id="emocion">
+        <option value="Feliz">Feliz</option>
+        <option value="Triste">Triste</option>
+        <option value="Ansioso">Ansioso</option>
+        <option value="Cansado">Cansado</option>
+        <option value="Enérgico">Enérgico</option>
+      </select>
+      <label>Comentario (opcional):</label>
+      <input type="text" id="comentario" placeholder="¿Por qué te sientes así?" />
+    </div>
+
+    <div class="entry">
+      <label>Registro de Sueño</label>
+      <input type="time" id="horaDormir" /> a 
+      <input type="time" id="horaDespertar" />
+    </div>
+
+    <button onclick="guardarEntrada()">Guardar entrada</button>
+    <button onclick="descargarDatos()">Exportar datos</button>
+    
+    <div class="chart-container">
+      <canvas id="graficaEmociones" width="400" height="200"></canvas>
+      <canvas id="graficaSueno" width="400" height="200"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let datos = [];
+
+    function guardarEntrada() {
+      const emocion = document.getElementById("emocion").value;
+      const comentario = document.getElementById("comentario").value;
+      const horaDormir = document.getElementById("horaDormir").value;
+      const horaDespertar = document.getElementById("horaDespertar").value;
+      const fecha = new Date().toLocaleDateString("es-MX");
+
+      datos.push({ fecha, emocion, comentario, horaDormir, horaDespertar });
+      alert("Entrada guardada");
+      dibujarGraficas();
+    }
+
+    function descargarDatos() {
+      const contenido = JSON.stringify(datos, null, 2);
+      const blob = new Blob([contenido], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "diario_integral2_datos.json";
+      link.click();
+    }
+
+    function dibujarGraficas() {
+      const emociones = {};
+      const horasSueno = [];
+
+      datos.forEach(d => {
+        emociones[d.emocion] = (emociones[d.emocion] || 0) + 1;
+        if (d.horaDormir && d.horaDespertar) {
+          const [hd, md] = d.horaDormir.split(":").map(Number);
+          const [hr, mr] = d.horaDespertar.split(":").map(Number);
+          let horas = hr + mr / 60 - (hd + md / 60);
+          if (horas < 0) horas += 24;
+          horasSueno.push(horas);
+        }
+      });
+
+      const ctx1 = document.getElementById("graficaEmociones").getContext("2d");
+      new Chart(ctx1, {
+        type: "bar",
+        data: {
+          labels: Object.keys(emociones),
+          datasets: [{
+            label: "Frecuencia de emociones",
+            data: Object.values(emociones),
+            backgroundColor: "rgba(54, 162, 235, 0.5)"
+          }]
+        }
+      });
+
+      const ctx2 = document.getElementById("graficaSueno").getContext("2d");
+      new Chart(ctx2, {
+        type: "line",
+        data: {
+          labels: horasSueno.map((_, i) => "Día " + (i + 1)),
+          datasets: [{
+            label: "Horas de sueño",
+            data: horasSueno,
+            borderColor: "rgba(75, 192, 192, 1)",
+            fill: false
+          }]
+        }
+      });
+    }
+  </script>
+</body>
+</html>
